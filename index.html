@@ -71,6 +71,49 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-SplitFS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/06/SplitFS/" class="article-date">
+  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">2022-07-06</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/06/SplitFS/">SplitFS</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p>![Ext4-DAX的索引路](E:\MyBlog\source_images\Ext4-DAX Indexing Path.png)</p>
+<p>SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4-DAX 文件，K-Split 中的 ext4-DAX 进一步搜索其extent index  以获取实际物理地址。</p>
+<p>SplitFS还提出了一种名为relink的新操作，以提高文件扩展的性能，并在没有双重写入数据的情况下在文件写入时提供崩溃一致性。在其同步模式下，文件增加首先添加到一个暂存文件，然后在调用fsync（）或暂存文件达到其大小限制时重新链接到目标文件；文件覆盖已应用。在严格模式下，每个文件写入，无论是覆盖还是附加数据，都会应用于暂存文件，并在每次写入结束时重新链接。因此，SplitFS  的索引时间包括内核和用户组件中的重新链接、mmap 和索引。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/06/SplitFS/" data-id="cl59lqjbf00002o7w3mghg6qv" data-title="SplitFS" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-PMDK从pmemobj到物理地址的映射" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" class="article-date">
@@ -130,46 +173,6 @@
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
 
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-测试博客" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/05/%E6%B5%8B%E8%AF%95%E5%8D%9A%E5%AE%A2/" class="article-date">
-  <time class="dt-published" datetime="2022-07-05T15:32:11.000Z" itemprop="datePublished">2022-07-05</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/05/%E6%B5%8B%E8%AF%95%E5%8D%9A%E5%AE%A2/">测试博客</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h1><p>这是我的一个测试</p>
-<p>。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/05/%E6%B5%8B%E8%AF%95%E5%8D%9A%E5%AE%A2/" data-id="cl58c79gt0000oo7wbvi4229c" data-title="测试博客" class="article-share-link">Share</a>
-      
-      
-      
     </footer>
   </div>
   
@@ -242,7 +245,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
     </div>
   </div>
 
@@ -252,7 +255,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a>
+      <a href="/tags/File-System/" style="font-size: 10px;">File System</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a>
     </div>
   </div>
 
@@ -274,11 +277,11 @@
       <ul>
         
           <li>
-            <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/">PMDK从pmemobj到物理地址的映射流程</a>
+            <a href="/2022/07/06/SplitFS/">SplitFS</a>
           </li>
         
           <li>
-            <a href="/2022/07/05/%E6%B5%8B%E8%AF%95%E5%8D%9A%E5%AE%A2/">测试博客</a>
+            <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/">PMDK从pmemobj到物理地址的映射流程</a>
           </li>
         
           <li>
