@@ -6,15 +6,15 @@
   
   <title>SplitFS | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Design of SplitFS![Ext4-DAX的索引路](.._images\Ext4-DAX Indexing Path.png) SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。">
+  <meta name="description" content="Design of SplitFS![Ext4-DAX的索引路](_images\Ext4-DAX Indexing Path.png) SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 U">
 <meta property="og:type" content="article">
 <meta property="og:title" content="SplitFS">
 <meta property="og:url" content="https://wjt1127.github.io/2022/07/06/SplitFS/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
-<meta property="og:description" content="Design of SplitFS![Ext4-DAX的索引路](.._images\Ext4-DAX Indexing Path.png) SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。">
+<meta property="og:description" content="Design of SplitFS![Ext4-DAX的索引路](_images\Ext4-DAX Indexing Path.png) SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 U">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-07-06T08:41:27.000Z">
-<meta property="article:modified_time" content="2022-07-06T13:24:41.624Z">
+<meta property="article:modified_time" content="2022-07-06T13:27:02.227Z">
 <meta property="article:author" content="Wjt1127">
 <meta property="article:tag" content="File System">
 <meta name="twitter:card" content="summary">
@@ -96,7 +96,7 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p>![Ext4-DAX的索引路](.._images\Ext4-DAX Indexing Path.png)</p>
+        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p>![Ext4-DAX的索引路](_images\Ext4-DAX Indexing Path.png)</p>
 <p>SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4-DAX 文件，K-Split 中的 ext4-DAX 进一步搜索其extent index  以获取实际物理地址。</p>
 <p>SplitFS还提出了一种名为relink的新操作，以提高文件扩展的性能，并在没有双重写入数据的情况下在文件写入时提供崩溃一致性。在其同步模式下，文件增加首先添加到一个暂存文件，然后在调用fsync（）或暂存文件达到其大小限制时重新链接到目标文件；文件覆盖已应用。在严格模式下，每个文件写入，无论是覆盖还是附加数据，都会应用于暂存文件，并在每次写入结束时重新链接。因此，SplitFS  的索引时间包括内核和用户组件中的重新链接、mmap 和索引。</p>
 
