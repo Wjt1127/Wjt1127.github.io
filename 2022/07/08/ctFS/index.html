@@ -6,20 +6,23 @@
   
   <title>ctFS | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="background">
+  <meta name="description" content="背景![PM的访问](..&#x2F;..&#x2F;images&#x2F;Access Time for PM.png) ​    由于PM的低延迟性，PM 比磁盘存储快得多，对 PM 的访问可以像对易失性 RAM 的访问一样，由内存管理单元 (MMU) 进行管理。PM的特性将访问瓶颈从 I&#x2F;O 时延转移到诸如块地址查找之类的操作上。比如，在写入工作负载中，ext4-DAX 中高达 45% 的开销是构建和搜索范围树以将文件">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ctFS">
 <meta property="og:url" content="https://wjt1127.github.io/2022/07/08/ctFS/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
-<meta property="og:description" content="background">
+<meta property="og:description" content="背景![PM的访问](..&#x2F;..&#x2F;images&#x2F;Access Time for PM.png) ​    由于PM的低延迟性，PM 比磁盘存储快得多，对 PM 的访问可以像对易失性 RAM 的访问一样，由内存管理单元 (MMU) 进行管理。PM的特性将访问瓶颈从 I&#x2F;O 时延转移到诸如块地址查找之类的操作上。比如，在写入工作负载中，ext4-DAX 中高达 45% 的开销是构建和搜索范围树以将文件">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://wjt1127.github.io/2022/07/08/images/Ext4-DAX-Indexing-Path.png">
+<meta property="og:image" content="https://wjt1127.github.io/2022/07/08/images/Pswap.jpg">
 <meta property="article:published_time" content="2022-07-08T02:18:07.000Z">
-<meta property="article:modified_time" content="2022-07-08T14:53:01.728Z">
+<meta property="article:modified_time" content="2022-07-09T08:40:20.446Z">
 <meta property="article:author" content="Wjt1127">
 <meta property="article:tag" content="File System">
 <meta property="article:tag" content="DAX">
 <meta property="article:tag" content="PM">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wjt1127.github.io/2022/07/08/images/Ext4-DAX-Indexing-Path.png">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
   
@@ -98,7 +101,31 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h2 id="background"><a href="#background" class="headerlink" title="background"></a>background</h2>
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>![PM的访问](../../images/Access Time for PM.png)</p>
+<p>​    由于PM的低延迟性，PM 比磁盘存储快得多，对 PM 的访问可以像对易失性 RAM 的访问一样，由内存管理单元 (MMU) 进行管理。PM的特性将访问瓶颈从 I/O 时延转移到诸如块地址查找之类的操作上。比如，在写入工作负载中，ext4-DAX 中高达 45% 的开销是构建和搜索范围树以将文件偏移量转换为在持久内存上的地址。</p>
+<p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX Index path"></p>
+<p>​    当前一些针对PM 优化的文件系统，要么使用DAX技术来绕过 Page Cache ；要么通过将不同的文件系统数据结构映射到用户空间来绕过内核，以减少切换到内核的开销。所有的这些系统都使用传统的基于树的索引结构将文件偏移量转换为设备地址。<strong>这种索引结构是在内存和持久存储(磁盘)的速度相差几个数量级时提出的，然而，PM 的出现让这种速度差异已经显着缩小到几乎可以忽略不计的程度。并且PM的低延迟反过来又将瓶颈从 I/O 转移到了文件索引开销上。</strong></p>
+<h2 id="方案与设计"><a href="#方案与设计" class="headerlink" title="方案与设计"></a>方案与设计</h2><p>​    <strong>提出ctFS文件系统使用连续文件分配来代替文件索引。</strong></p>
+<p>​    ctFS使用持久页表 (PPT，Persistent Page Table) 管理文件的虚拟到物理映射。 PPT 与 DRAM 中的常规易失页表具有相似的结构，不同之处在于 PPT 永久存储在 PM 上。在 ctFS 内存区域内的地址出现页面错误时，操作系统会查找 PPT 并在基于 DRAM 的页表中创建相同的映射。因此，子序列访问由 MMU 提供查询DRAM中页表的服务，从而避免了索引成本。</p>
+<hr>
+<p>​    <strong>ctFS的架构</strong></p>
+<p>​    ![ctFS的架构](../../images/Architecture of ctFS.jpg)</p>
+<p>​    ctFS 的架构如图所示，由两个组件组成：(1) 提供文件系统抽象的用户空间文件系统库 ctU，以及 (2) 提供虚拟内存抽象的内核子系统 ctK。 ctU 实现文件系统结构并将其映射到虚拟内存空间。 ctK 使用存储在 PM 中的持久页表 (PPT) 将虚拟地址映射到 PM 的物理地址。ctU 地址范围内的虚拟地址上的任何页面错误都由 ctK 处理。如果 PPT 中不包含故障地址的映射，ctK 将分配一个 PM 页，在 PPT 中建立映射，然后将映射从 PPT 复制到内核的 DRAM 页表，从而实现虚拟到 PM 地址的转换由 MMU 执行。当 PPT 中的任何映射过时 时，ctK 将从 DRAM 页表中删除相应的映射，并删除 TLB 中的映射。</p>
+<p>​    <strong>ctU</strong>：</p>
+<p>​    ctFS 的用户空间库 ctU 将文件系统的虚拟内存空间组织成分层分区，以促进连续分配。ctFS采用类似于Linux 的伙伴分配算法来管理虚拟地址空间，并将它们分层，每个level之间的大小差距是8倍，因为要和page table的多级页表先匹配，和地址的对应的关系对应如下：</p>
+<p>![size of partition](../../images/size of partition.jpg)</p>
+<p>​    虚拟内存区域被划分为两个 L9 分区。第一个 L9 分区是用于存储文件系统元数据的特殊分区：超级块、inode 的位图以及 inode 本身。每个 inode 存储文件的元数据（例如，所有者、组、保护、大小等）和一个字段，用于标识包含文件数据的分区的虚拟内存地址。 inode 位图用于跟踪是否分配了 inode。第二个 L9 分区用于数据存储。</p>
+<p>![Layout of ctFS](../../images/Layout of ctFS.jpg)</p>
+<p>​    对于空闲页的查找，ctFS设置了一个表头来加速查找，对于L4-L9，会利用第一个页去保存使用状态，对于后面的三个层级，用一个页去表述空闲资源有些浪费，转为利用bitmap去表示。</p>
+<p>​    <strong>ctK:</strong></p>
+<p>​    由于地址空间布局随机化，内存区域可能会在不同进程中映射到不同的起始虚拟地址，并且硬件重新配置可能会更改 PM 的起始物理地址。虽然每个进程都有自己的 DRAM 页表，但 ctK 有一个 PPT，其中包含 ctU 内存范围内所有虚拟地址的映射（即分区内的那些）。 MMU 无法访问 PPT，因此 PPT 中的映射用于按需填充 DRAM 页表中的条目，作为页面错误处理的一部分。</p>
+<p>​    <strong>ctK 负责管理PPT，对于虚拟地址和物理地址，ctFS都采用的相对地址，为每个进程映射到不同的虚拟地址</strong></p>
+<hr>
+<p>​    <strong>Pswap系统调用：</strong></p>
+<p>​    最初，一个文件被分配在一个分区中，该分区的大小刚好足以容纳该文件。当文件超出其分区时，它会被移动到虚拟内存中更大的分区，而无需复制任何物理持久内存。 ctFS 通过使用pswap 将文件的物理页面重新映射到新分区来做到这一点，这是一种新的操作系统系统调用，可以原子地交换虚拟到物理的映射。原子交换还可以在多块写入时实现高效的崩溃一致性，而无需重复写入数据。 ctFS 中的原子写入只是将数据写入新空间，然后将其与旧数据进行 pswaps。</p>
+<p>​    <img src="./../images/Pswap.jpg" alt="Pswap"></p>
+<p>​        上图展示了一个例子，其中 pswap 需要交换两个页面序列 A 和 B， 两个序列都包含 262658 (512 × 512 + 512 + 2) 个页面。 交换两个序列的数据时，使用pswap 只需要交换 4 对页表条目或目录，因为所有 262,658 个页面都被单个 PUD 条目覆盖（覆盖 512×512 个页面），单个 PMD 条目（涵盖 512 页）和两个 PTE 条目（涵盖 2 页）。</p>
+
       
     </div>
     <footer class="article-footer">
