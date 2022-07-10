@@ -4,14 +4,22 @@
   <meta charset="utf-8">
   
   
-  <title>Wjt1127 Blog</title>
+  <title>第一章:内核引导和初始化 | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Wjt1127 Blog">
-<meta property="og:url" content="https://wjt1127.github.io/index.html">
+  <meta name="description" content="​    处理器上电以后，首先执行引导程序，引导程序把内核加载到内存，然后执行内核，内核初始化完成以后，启动用户空间的第一个进程。 引导程序在哪读取？​    处理器在上电时自动把程序计数器设置为处理器厂商设计的某个固定值，对于 ARM64 处理器，这个固定值是0。处理器的内存管理单元 (Memory Management Unit, MMU) 负责把虚拟地址转换为物理地址， ARM64 处理器刚">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第一章:内核引导和初始化">
+<meta property="og:url" content="https://wjt1127.github.io/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
+<meta property="og:description" content="​    处理器上电以后，首先执行引导程序，引导程序把内核加载到内存，然后执行内核，内核初始化完成以后，启动用户空间的第一个进程。 引导程序在哪读取？​    处理器在上电时自动把程序计数器设置为处理器厂商设计的某个固定值，对于 ARM64 处理器，这个固定值是0。处理器的内存管理单元 (Memory Management Unit, MMU) 负责把虚拟地址转换为物理地址， ARM64 处理器刚">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-09T11:35:25.000Z">
+<meta property="article:modified_time" content="2022-07-10T02:29:58.415Z">
 <meta property="article:author" content="Wjt1127">
+<meta property="article:tag" content="《Linux内核深度解析(余华兵)》">
+<meta property="article:tag" content="阅读笔记">
+<meta property="article:tag" content="Linux内核">
+<meta property="article:tag" content="初始化">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
@@ -69,9 +77,7 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-第一章-内核引导和初始化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-第一章-内核引导和初始化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
   <time class="dt-published" datetime="2022-07-09T11:35:25.000Z" itemprop="datePublished">2022-07-09</time>
@@ -84,8 +90,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/">第一章:内核引导和初始化</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      第一章:内核引导和初始化
     </h1>
   
 
@@ -160,236 +166,19 @@
     </footer>
   </div>
   
-</article>
-
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-ctFS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/08/ctFS/" class="article-date">
-  <time class="dt-published" datetime="2022-07-08T02:18:07.000Z" itemprop="datePublished">2022-07-08</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/08/ctFS/">ctFS</a>
-    </h1>
+    <a href="/2022/07/08/ctFS/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">ctFS</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><img src="./../images/Access-Time-for-PM.png" alt="PM的访问"></p>
-<p>​    由于PM的低延迟性，PM 比磁盘存储快得多，对 PM 的访问可以像对易失性 RAM 的访问一样，由内存管理单元 (MMU) 进行管理。PM的特性将访问瓶颈从 I/O 时延转移到诸如块地址查找之类的操作上。比如，在写入工作负载中，ext4-DAX 中高达 45% 的开销是构建和搜索范围树以将文件偏移量转换为在持久内存上的地址。</p>
-<p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX Index path"></p>
-<p>​    当前一些针对PM 优化的文件系统，要么使用DAX技术来绕过 Page Cache ；要么通过将不同的文件系统数据结构映射到用户空间来绕过内核，以减少切换到内核的开销。所有的这些系统都使用传统的基于树的索引结构将文件偏移量转换为设备地址。<strong>这种索引结构是在内存和持久存储(磁盘)的速度相差几个数量级时提出的，然而，PM 的出现让这种速度差异已经显着缩小到几乎可以忽略不计的程度。并且PM的低延迟反过来又将瓶颈从 I/O 转移到了文件索引开销上。</strong></p>
-<h2 id="方案与设计"><a href="#方案与设计" class="headerlink" title="方案与设计"></a>方案与设计</h2><p>​    <strong>提出ctFS文件系统使用连续文件分配来代替文件索引。</strong></p>
-<p>​    ctFS使用持久页表 (PPT，Persistent Page Table) 管理文件的虚拟到物理映射。 PPT 与 DRAM 中的常规易失页表具有相似的结构，不同之处在于 PPT 永久存储在 PM 上。在 ctFS 内存区域内的地址出现页面错误时，操作系统会查找 PPT 并在基于 DRAM 的页表中创建相同的映射。因此，子序列访问由 MMU 提供查询DRAM中页表的服务，从而避免了索引成本。</p>
-<hr>
-<p>​    <strong>ctFS的架构</strong></p>
-<p>​    <img src="./../images/Architecture-of-ctFS.jpg" alt="ctFS的架构"></p>
-<p>​    ctFS 的架构如图所示，由两个组件组成：(1) 提供文件系统抽象的用户空间文件系统库 ctU，以及 (2) 提供虚拟内存抽象的内核子系统 ctK。 ctU 实现文件系统结构并将其映射到虚拟内存空间。 ctK 使用存储在 PM 中的持久页表 (PPT) 将虚拟地址映射到 PM 的物理地址。ctU 地址范围内的虚拟地址上的任何页面错误都由 ctK 处理。如果 PPT 中不包含故障地址的映射，ctK 将分配一个 PM 页，在 PPT 中建立映射，然后将映射从 PPT 复制到内核的 DRAM 页表，从而实现虚拟到 PM 地址的转换由 MMU 执行。当 PPT 中的任何映射过时 时，ctK 将从 DRAM 页表中删除相应的映射，并删除 TLB 中的映射。</p>
-<p>​    <strong>ctU</strong>：</p>
-<p>​    ctFS 的用户空间库 ctU 将文件系统的虚拟内存空间组织成分层分区，以促进连续分配。ctFS采用类似于Linux 的伙伴分配算法来管理虚拟地址空间，并将它们分层，每个level之间的大小差距是8倍，因为要和page table的多级页表先匹配，和地址的对应的关系对应如下：</p>
-<p><img src="./../images/size-of-partition.jpg" alt="size of partition"></p>
-<p>​    虚拟内存区域被划分为两个 L9 分区。第一个 L9 分区是用于存储文件系统元数据的特殊分区：超级块、inode 的位图以及 inode 本身。每个 inode 存储文件的元数据（例如，所有者、组、保护、大小等）和一个字段，用于标识包含文件数据的分区的虚拟内存地址。 inode 位图用于跟踪是否分配了 inode。第二个 L9 分区用于数据存储。</p>
-<p><img src="./../images/Layout-of-ctFS.jpg" alt="Layout of ctFS"></p>
-<p>​    对于空闲页的查找，ctFS设置了一个表头来加速查找，对于L4-L9，会利用第一个页去保存使用状态，对于后面的三个层级，用一个页去表述空闲资源有些浪费，转为利用bitmap去表示。</p>
-<p>​    <strong>ctK:</strong></p>
-<p>​    由于地址空间布局随机化，内存区域可能会在不同进程中映射到不同的起始虚拟地址，并且硬件重新配置可能会更改 PM 的起始物理地址。虽然每个进程都有自己的 DRAM 页表，但 ctK 有一个 PPT，其中包含 ctU 内存范围内所有虚拟地址的映射（即分区内的那些）。 MMU 无法访问 PPT，因此 PPT 中的映射用于按需填充 DRAM 页表中的条目，作为页面错误处理的一部分。</p>
-<p>​    <strong>ctK 负责管理PPT，对于虚拟地址和物理地址，ctFS都采用的相对地址，为每个进程映射到不同的虚拟地址</strong></p>
-<hr>
-<p>​    <strong>Pswap系统调用：</strong></p>
-<p>​    最初，一个文件被分配在一个分区中，该分区的大小刚好足以容纳该文件。当文件超出其分区时，它会被移动到虚拟内存中更大的分区，而无需复制任何物理持久内存。 ctFS 通过使用pswap 将文件的物理页面重新映射到新分区来做到这一点，这是一种新的操作系统系统调用，可以原子地交换虚拟到物理的映射。原子交换还可以在多块写入时实现高效的崩溃一致性，而无需重复写入数据。 ctFS 中的原子写入只是将数据写入新空间，然后将其与旧数据进行 pswaps。</p>
-<p>​    <img src="./../images/Pswap.jpg" alt="Pswap"></p>
-<p>​        上图展示了一个例子，其中 pswap 需要交换两个页面序列 A 和 B， 两个序列都包含 262658 (512 × 512 + 512 + 2) 个页面。 交换两个序列的数据时，使用pswap 只需要交换 4 对页表条目或目录，因为所有 262,658 个页面都被单个 PUD 条目覆盖（覆盖 512×512 个页面），单个 PMD 条目（涵盖 512 页）和两个 PTE 条目（涵盖 2 页）。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/08/ctFS/" data-id="cl5bu6cjv0000g07w9vypf1jw" data-title="ctFS" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PM/" rel="tag">PM</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-
-  
-    <article id="post-SplitFS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/06/SplitFS/" class="article-date">
-  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">2022-07-06</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/06/SplitFS/">SplitFS</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX的索引路"></p>
-<p>SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4-DAX 文件，K-Split 中的 ext4-DAX 进一步搜索其extent index  以获取实际物理地址。</p>
-<p>SplitFS还提出了一种名为relink的新操作，以提高文件扩展的性能，并在没有双重写入数据的情况下在文件写入时提供崩溃一致性。在其同步模式下，文件增加首先添加到一个暂存文件，然后在调用fsync（）或暂存文件达到其大小限制时重新链接到目标文件；文件覆盖已应用。在严格模式下，每个文件写入，无论是覆盖还是附加数据，都会应用于暂存文件，并在每次写入结束时重新链接。因此，SplitFS  的索引时间包括内核和用户组件中的重新链接、mmap 和索引。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/06/SplitFS/" data-id="cl59lyqpl0004to7wge4z311s" data-title="SplitFS" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-PMDK从pmemobj到物理地址的映射" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" class="article-date">
-  <time class="dt-published" datetime="2022-07-05T16:00:00.000Z" itemprop="datePublished">2022-07-06</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/">PMDK从pmemobj到物理地址的映射流程</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="三重映射"><a href="#三重映射" class="headerlink" title="三重映射"></a>三重映射</h1><ul>
-<li>从pmemobj的ID到虚拟地址的映射</li>
-<li>从虚拟地址到文件内偏移的映射</li>
-<li>从文件到物理地址的映射</li>
-</ul>
-<h2 id="pmemobj到虚拟地址的映射"><a href="#pmemobj到虚拟地址的映射" class="headerlink" title="pmemobj到虚拟地址的映射"></a>pmemobj到虚拟地址的映射</h2><ul>
-<li><p>查看pmemobj的创建函数 pmemobj_createW(src\libpmemobj\obj.c)</p>
-<ol>
-<li><p>pmemobj_createW —&gt; pmemobj_createU(src\libpmemobj\obj.c)</p>
-</li>
-<li><p>pmemobj_createU  —&gt; util_pool_create(src\common\set.c)</p>
-</li>
-<li><p>util_pool_create  —&gt; util_pool_create_uuids(src\common\set.c)</p>
-</li>
-<li><p>util_pool_create_uuids  —&gt; util_poolset_create_set(src\common\set.c)</p>
-</li>
-<li><p><strong>util_poolset_create_set  —&gt; util_poolset_single(src\common\set.c)</strong> </p>
-</li>
-<li><p>设置DAX模式就主要到util_poolset_single进行处理</p>
-<p>​	其中<strong>rep-&gt;part[0].fd</strong>成员使用 <strong>util_poolset_file</strong>填充</p>
-<p>​	<strong>rep-&gt;part[0].alignment</strong>使用<strong>device_dax_alignment</strong>填充</p>
-</li>
-</ol>
-</li>
-<li><p>查看pmemobj_open函数(src\libpmemobj\obj.c)</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" data-id="cl59lyqpb0000to7w6ddu5jh1" data-title="PMDK从pmemobj到物理地址的映射流程" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/05/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2022-07-05T14:58:39.711Z" itemprop="datePublished">2022-07-05</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/05/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/05/hello-world/" data-id="cl59lyqpk0003to7wbi4je26i" data-title="Hello World" class="article-share-link">Share</a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
 </section>
