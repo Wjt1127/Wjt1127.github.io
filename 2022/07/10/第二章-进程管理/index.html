@@ -4,14 +4,22 @@
   <meta charset="utf-8">
   
   
-  <title>Tag: File System | Wjt1127 Blog</title>
+  <title>第二章:进程管理 | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Wjt1127 Blog">
-<meta property="og:url" content="https://wjt1127.github.io/tags/File-System/index.html">
+  <meta name="description" content="进程​    Linux 内核把进程称为任务 (task), 进程的虚拟地址空间分为用户虚拟地址空间和内核虚拟地址空间，所有进程共享内核虚拟地址空间，每个进程有独立的用户虚拟地址空间。 ​    进程描述符 task_struct 被定义在sched.h头文件中：include\linux\sched.h ​    其中重要的成员变量如下：    成员 描述    volatile long st">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第二章:进程管理">
+<meta property="og:url" content="https://wjt1127.github.io/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
+<meta property="og:description" content="进程​    Linux 内核把进程称为任务 (task), 进程的虚拟地址空间分为用户虚拟地址空间和内核虚拟地址空间，所有进程共享内核虚拟地址空间，每个进程有独立的用户虚拟地址空间。 ​    进程描述符 task_struct 被定义在sched.h头文件中：include\linux\sched.h ​    其中重要的成员变量如下：    成员 描述    volatile long st">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-10T02:36:43.000Z">
+<meta property="article:modified_time" content="2022-07-10T14:49:36.075Z">
 <meta property="article:author" content="Wjt1127">
+<meta property="article:tag" content="《Linux内核深度解析(余华兵)》">
+<meta property="article:tag" content="阅读笔记">
+<meta property="article:tag" content="Linux内核">
+<meta property="article:tag" content="进程管理">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
@@ -69,58 +77,126 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2022" class="archive-year">2022</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/08/ctFS/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-08T02:18:07.000Z" itemprop="datePublished">Jul 8</time>
+        <section id="main"><article id="post-第二章-进程管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2022-07-10T02:36:43.000Z" itemprop="datePublished">2022-07-10</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/08/ctFS/">ctFS</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      第二章:进程管理
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/06/SplitFS/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">Jul 6</time>
-</a>
+    <div class="e-content article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/06/SplitFS/">SplitFS</a>
-    </h1>
-  
+        <h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>​    Linux 内核把进程称为任务 (task), 进程的虚拟地址空间分为用户虚拟地址空间和内核虚拟地址空间，所有进程共享内核虚拟地址空间，每个进程有独立的用户虚拟地址空间。</p>
+<p>​    <strong>进程描述符 task_struct</strong> 被定义在sched.h头文件中：<strong>include\linux\sched.h</strong></p>
+<p>​    其中重要的成员变量如下：</p>
+<table>
+<thead>
+<tr>
+<th align="center">成员</th>
+<th align="center">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">volatile long state;</td>
+<td align="center">进程的状态。 -1 unrunnable, 0 runnable, &gt;0 stopped</td>
+</tr>
+<tr>
+<td align="center">void *stack;</td>
+<td align="center">指向内核栈</td>
+</tr>
+<tr>
+<td align="center">pid_t pid;</td>
+<td align="center">全局的进程号</td>
+</tr>
+<tr>
+<td align="center">pid_t tgid;</td>
+<td align="center">全局的线程组标识符</td>
+</tr>
+<tr>
+<td align="center">struct pid_link pids[PIDTYPE_MAX];</td>
+<td align="center">进程号，进程组标识符和会话标识符</td>
+</tr>
+<tr>
+<td align="center">struct task_struct __ rcu *real_parent; <br />struct task_struct __rcu *parent;</td>
+<td align="center">real_parent指向真实的父进程。<br />parent 指向父进程：如果进程被另一个进程（通常是调试器）<br />使用系统调用ptrace跟踪，那么父进程是跟踪进程，否则和 real_parent相同</td>
+</tr>
+<tr>
+<td align="center">char comm[TASK_COMM_LEN];</td>
+<td align="center">进程名称</td>
+</tr>
+<tr>
+<td align="center">int prio,static_prio,normal_prio;<br/>unsigned int rt__priority; <br />unsigned int policy;</td>
+<td align="center">调度策略和优先级</td>
+</tr>
+<tr>
+<td align="center">cpumask_t cpus_allowed;</td>
+<td align="center">允许进程在哪些处理器上运行</td>
+</tr>
+<tr>
+<td align="center">struct mm_struct *mm, *active_mm;</td>
+<td align="center">指向内存描述符<br />进程：mm 和 active_mm指向同一个内存描述符<br />内核线程：mm是空指针，当内核线程运行时， active_mm指向从进程借用的内存描述符</td>
+</tr>
+<tr>
+<td align="center">struct fs struct *fs;</td>
+<td align="center">文件系统信息，主要是进程的根目录和当前工作目录</td>
+</tr>
+<tr>
+<td align="center">struct files_struct *files;</td>
+<td align="center">打开文件表</td>
+</tr>
+<tr>
+<td align="center">struct nsproxy *nsproxy;</td>
+<td align="center">命名空间</td>
+</tr>
+</tbody></table>
 
-    </header>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" data-id="cl5g7cjse0000sw7w4g1z4umi" data-title="第二章:进程管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+
+    </footer>
   </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          第三章:内存管理
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">第一章:内核引导和初始化</div>
+    </a>
+  
+</nav>
+
+  
 </article>
-  
-  
-    </div></section>
-  
 
 
 </section>

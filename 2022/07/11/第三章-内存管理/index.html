@@ -4,15 +4,28 @@
   <meta charset="utf-8">
   
   
-  <title>Tag: File System | Wjt1127 Blog</title>
+  <title>第三章:内存管理 | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Wjt1127 Blog">
-<meta property="og:url" content="https://wjt1127.github.io/tags/File-System/index.html">
+  <meta name="description" content="内存管理框架​    内存管理子系统的架构如下图所示，分为用户空间、内核空间和硬件 3 个层面。  用户空间​    应用程序使用 malloc() 申请内存，使用 free() 释放内存。 ​    malloc() 和 free() 是 glibc 库的内存分配器 ptmalloc 提供的接口， ptmalloc 使用系统调用 brk 或 mmap 向内 核以页为单位申请内存 ， 然后划分成小">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第三章:内存管理">
+<meta property="og:url" content="https://wjt1127.github.io/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
+<meta property="og:description" content="内存管理框架​    内存管理子系统的架构如下图所示，分为用户空间、内核空间和硬件 3 个层面。  用户空间​    应用程序使用 malloc() 申请内存，使用 free() 释放内存。 ​    malloc() 和 free() 是 glibc 库的内存分配器 ptmalloc 提供的接口， ptmalloc 使用系统调用 brk 或 mmap 向内 核以页为单位申请内存 ， 然后划分成小">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://wjt1127.github.io/2022/07/11/images/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A1%86%E6%9E%B6.png">
+<meta property="og:image" content="https://wjt1127.github.io/2022/07/11/images/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E7%9A%84%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2022-07-11T01:39:41.000Z">
+<meta property="article:modified_time" content="2022-07-11T03:45:41.647Z">
 <meta property="article:author" content="Wjt1127">
+<meta property="article:tag" content="《Linux内核深度解析(余华兵)》">
+<meta property="article:tag" content="阅读笔记">
+<meta property="article:tag" content="Linux内核">
+<meta property="article:tag" content="内存管理">
+<meta property="article:tag" content="虚拟地址">
+<meta property="article:tag" content="地址映射">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wjt1127.github.io/2022/07/11/images/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A1%86%E6%9E%B6.png">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
   
@@ -69,58 +82,65 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2022" class="archive-year">2022</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/08/ctFS/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-08T02:18:07.000Z" itemprop="datePublished">Jul 8</time>
+        <section id="main"><article id="post-第三章-内存管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2022-07-11T01:39:41.000Z" itemprop="datePublished">2022-07-11</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/08/ctFS/">ctFS</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      第三章:内存管理
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/06/SplitFS/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">Jul 6</time>
-</a>
+    <div class="e-content article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/06/SplitFS/">SplitFS</a>
-    </h1>
-  
+        <h2 id="内存管理框架"><a href="#内存管理框架" class="headerlink" title="内存管理框架"></a>内存管理框架</h2><p>​    内存管理子系统的架构如下图所示，分为用户空间、内核空间和硬件 3 个层面。</p>
+<p><img src="./../images/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A1%86%E6%9E%B6.png" alt="内存管理框架"></p>
+<h3 id="用户空间"><a href="#用户空间" class="headerlink" title="用户空间"></a>用户空间</h3><p>​    应用程序使用 malloc() 申请内存，使用 free() 释放内存。</p>
+<p>​    malloc() 和 free() 是 glibc 库的内存分配器 ptmalloc 提供的接口， ptmalloc 使用系统调用 brk 或 mmap 向内 核以页为单位申请内存 ， 然后划分成小内存块分配给应用程序。</p>
+<h3 id="内核空间"><a href="#内核空间" class="headerlink" title="内核空间"></a>内核空间</h3><p>​    （1）内核空间的基本功能</p>
+<p>​    虚拟内存管理负责从进程的虚拟地址空间分配虚拟页， sys_brk 用来扩大或收缩堆， sys_mmap 用来在内存映射区域分配虚拟页， sys_munmap 用来释放虚拟页。</p>
+<p>​    <strong>内核使用延迟分配物理内存的策略，进程第 1 次访问虚拟页的时候，触发页错误异常，页错误异常处理程序从页分配器申请物理页，在进程的页表中把虚拟页映射到物理页。</strong></p>
+<p>​    <img src="./../images/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E7%9A%84%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E6%B5%81%E7%A8%8B.png" alt="image-20220711114250999"></p>
+<p>​    页分配器负责分配物理页，当前使用的页分配器是伙伴分配器。 </p>
+<p>​    内核空间提供了把页划分成小内存块分配的块分配器，提供分配内存的接口 kmalloc() 和释放内存的接口 kfree(), 支持 3 种块分配器： SLAB 分配器、 SLUB 分配器和 SLOB 分配器。</p>
+<p>​    在内核初始化的过程中，页分配器还没准备好，需要使用临时的引导内存分配器分配内存。</p>
 
-    </header>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" data-id="cl5g7cjsi0001sw7wegbh5s1c" data-title="第三章:内存管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+
+    </footer>
   </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">第二章:进程管理</div>
+    </a>
+  
+</nav>
+
+  
 </article>
-  
-  
-    </div></section>
-  
 
 
 </section>

@@ -71,6 +71,160 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-第三章-内存管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2022-07-11T01:39:41.000Z" itemprop="datePublished">2022-07-11</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">第三章:内存管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="内存管理框架"><a href="#内存管理框架" class="headerlink" title="内存管理框架"></a>内存管理框架</h2><p>​    内存管理子系统的架构如下图所示，分为用户空间、内核空间和硬件 3 个层面。</p>
+<p><img src="./../images/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A1%86%E6%9E%B6.png" alt="内存管理框架"></p>
+<h3 id="用户空间"><a href="#用户空间" class="headerlink" title="用户空间"></a>用户空间</h3><p>​    应用程序使用 malloc() 申请内存，使用 free() 释放内存。</p>
+<p>​    malloc() 和 free() 是 glibc 库的内存分配器 ptmalloc 提供的接口， ptmalloc 使用系统调用 brk 或 mmap 向内 核以页为单位申请内存 ， 然后划分成小内存块分配给应用程序。</p>
+<h3 id="内核空间"><a href="#内核空间" class="headerlink" title="内核空间"></a>内核空间</h3><p>​    （1）内核空间的基本功能</p>
+<p>​    虚拟内存管理负责从进程的虚拟地址空间分配虚拟页， sys_brk 用来扩大或收缩堆， sys_mmap 用来在内存映射区域分配虚拟页， sys_munmap 用来释放虚拟页。</p>
+<p>​    <strong>内核使用延迟分配物理内存的策略，进程第 1 次访问虚拟页的时候，触发页错误异常，页错误异常处理程序从页分配器申请物理页，在进程的页表中把虚拟页映射到物理页。</strong></p>
+<p>​    <img src="./../images/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E7%9A%84%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E6%B5%81%E7%A8%8B.png" alt="image-20220711114250999"></p>
+<p>​    页分配器负责分配物理页，当前使用的页分配器是伙伴分配器。 </p>
+<p>​    内核空间提供了把页划分成小内存块分配的块分配器，提供分配内存的接口 kmalloc() 和释放内存的接口 kfree(), 支持 3 种块分配器： SLAB 分配器、 SLUB 分配器和 SLOB 分配器。</p>
+<p>​    在内核初始化的过程中，页分配器还没准备好，需要使用临时的引导内存分配器分配内存。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" data-id="cl5g7cjsi0001sw7wegbh5s1c" data-title="第三章:内存管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-第二章-进程管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2022-07-10T02:36:43.000Z" itemprop="datePublished">2022-07-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">第二章:进程管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>​    Linux 内核把进程称为任务 (task), 进程的虚拟地址空间分为用户虚拟地址空间和内核虚拟地址空间，所有进程共享内核虚拟地址空间，每个进程有独立的用户虚拟地址空间。</p>
+<p>​    <strong>进程描述符 task_struct</strong> 被定义在sched.h头文件中：<strong>include\linux\sched.h</strong></p>
+<p>​    其中重要的成员变量如下：</p>
+<table>
+<thead>
+<tr>
+<th align="center">成员</th>
+<th align="center">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">volatile long state;</td>
+<td align="center">进程的状态。 -1 unrunnable, 0 runnable, &gt;0 stopped</td>
+</tr>
+<tr>
+<td align="center">void *stack;</td>
+<td align="center">指向内核栈</td>
+</tr>
+<tr>
+<td align="center">pid_t pid;</td>
+<td align="center">全局的进程号</td>
+</tr>
+<tr>
+<td align="center">pid_t tgid;</td>
+<td align="center">全局的线程组标识符</td>
+</tr>
+<tr>
+<td align="center">struct pid_link pids[PIDTYPE_MAX];</td>
+<td align="center">进程号，进程组标识符和会话标识符</td>
+</tr>
+<tr>
+<td align="center">struct task_struct __ rcu *real_parent; <br />struct task_struct __rcu *parent;</td>
+<td align="center">real_parent指向真实的父进程。<br />parent 指向父进程：如果进程被另一个进程（通常是调试器）<br />使用系统调用ptrace跟踪，那么父进程是跟踪进程，否则和 real_parent相同</td>
+</tr>
+<tr>
+<td align="center">char comm[TASK_COMM_LEN];</td>
+<td align="center">进程名称</td>
+</tr>
+<tr>
+<td align="center">int prio,static_prio,normal_prio;<br/>unsigned int rt__priority; <br />unsigned int policy;</td>
+<td align="center">调度策略和优先级</td>
+</tr>
+<tr>
+<td align="center">cpumask_t cpus_allowed;</td>
+<td align="center">允许进程在哪些处理器上运行</td>
+</tr>
+<tr>
+<td align="center">struct mm_struct *mm, *active_mm;</td>
+<td align="center">指向内存描述符<br />进程：mm 和 active_mm指向同一个内存描述符<br />内核线程：mm是空指针，当内核线程运行时， active_mm指向从进程借用的内存描述符</td>
+</tr>
+<tr>
+<td align="center">struct fs struct *fs;</td>
+<td align="center">文件系统信息，主要是进程的根目录和当前工作目录</td>
+</tr>
+<tr>
+<td align="center">struct files_struct *files;</td>
+<td align="center">打开文件表</td>
+</tr>
+<tr>
+<td align="center">struct nsproxy *nsproxy;</td>
+<td align="center">命名空间</td>
+</tr>
+</tbody></table>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" data-id="cl5g7cjse0000sw7w4g1z4umi" data-title="第二章:进程管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-第一章-内核引导和初始化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
@@ -403,7 +557,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
     </div>
   </div>
 
@@ -413,7 +567,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/DAX/" style="font-size: 10px;">DAX</a> <a href="/tags/File-System/" style="font-size: 20px;">File System</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 10px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 10px;">PM</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 10px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">阅读笔记</a>
+      <a href="/tags/DAX/" style="font-size: 10px;">DAX</a> <a href="/tags/File-System/" style="font-size: 15px;">File System</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 20px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 10px;">PM</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 20px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 10px;">内存管理</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" style="font-size: 10px;">地址映射</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" style="font-size: 10px;">虚拟地址</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 10px;">进程管理</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">阅读笔记</a>
     </div>
   </div>
 
@@ -435,6 +589,14 @@
       <ul>
         
           <li>
+            <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">第三章:内存管理</a>
+          </li>
+        
+          <li>
+            <a href="/2022/07/10/%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">第二章:进程管理</a>
+          </li>
+        
+          <li>
             <a href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/">第一章:内核引导和初始化</a>
           </li>
         
@@ -444,14 +606,6 @@
         
           <li>
             <a href="/2022/07/06/SplitFS/">SplitFS</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/">PMDK从pmemobj到物理地址的映射流程</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/05/hello-world/">Hello World</a>
           </li>
         
       </ul>
