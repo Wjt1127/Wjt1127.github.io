@@ -71,6 +71,116 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-SubZero" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/13/SubZero/" class="article-date">
+  <time class="dt-published" datetime="2022-07-13T02:37:42.000Z" itemprop="datePublished">2022-07-13</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/13/SubZero/">SubZero</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="Motivation"><a href="#Motivation" class="headerlink" title="Motivation"></a>Motivation</h2><p>​    POSIX标准的 read() 和 write() 长期以来一直是访问文件中数据的标准接口。但是，当文件存储在 PMEM 中时，这些方法会带来冗余的数据拷贝开销。为了避免这种数据复制，PMEM 感知型文件系统(如NOVA、PMFS等)使用 DAX 技术通过总线直接访问 PM，但这样做需要程序员管理对文件的写入原子性和并发访问。</p>
+<p>​    所以 SubZero 希望结合 POSIX IO 和 DAX IO 两者的优势，提供类似 DAX 的速度和一个简单的、类似 POSIX 的接口。</p>
+<h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p>​    SubZero IO实现了以下的系统调用：</p>
+<p><img src="./../images/SubZero%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8.png" alt="SubZero系统调用"></p>
+<pre><code>### peek()
+</code></pre>
+<p>​    peek () 系统调用将 PM 文件映射到内存中，并返回一个指向内存区域的指针，该内存区域包含特定文件偏移处的文件内容。映射的内存区域就是<strong>执行 peek () 时</strong>文件内容的快照，该快照对于文件修改（例如 write () 或 patch () ）是原子的。映射使用 O_RDONLY 标志位，使得快照是只读的、不可变的，因此尝试更改其内容会导致Segmentation Fault。</p>
+<p>​    peek() 与 mmap() 相比，peek() 的文件偏移或返回的指针没有对齐限制，而 mmap() 需要页对齐。</p>
+<hr>
+<p>​    **peek() example1：basic **</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// peek the first 4KB of a PMEM file</span></span><br><span class="line"><span class="type">int</span> fd = open(<span class="string">&quot;foo&quot;</span>, O_RDONLY); <span class="comment">// Open the target file</span></span><br><span class="line"><span class="type">char</span> *buf = peek(fd, <span class="number">0</span>, <span class="number">4096</span>); <span class="comment">// Peek its contents</span></span><br><span class="line"><span class="built_in">printf</span>(“%s\n”, buf); <span class="comment">// Print the contents</span></span><br><span class="line">unpeek(buf); <span class="comment">// Unpeek the contents</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>​    <strong>peek() example2：immutability</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// peek the first 4KB of a PMEM file</span></span><br><span class="line"><span class="type">int</span> fd = open(<span class="string">&quot;foo&quot;</span>, O_RDONLY); <span class="comment">// Open the target file</span></span><br><span class="line"><span class="type">char</span> *buf = peek(fd, <span class="number">0</span>, <span class="number">4096</span>); <span class="comment">// Peek its contents</span></span><br><span class="line"><span class="built_in">printf</span>(“%s\n”, buf); <span class="comment">// Print the contents</span></span><br><span class="line">*buf = ‘a’; <span class="comment">// Segmentation fault!</span></span><br><span class="line">unpeek(buf); <span class="comment">// Unpeek the contents</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>​    **peek() example3：isolation **</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Thread 1: peek the first 4KB of a PMEM file</span></span><br><span class="line"><span class="type">int</span> fd = open(<span class="string">&quot;foo&quot;</span>, O_RDONLY);</span><br><span class="line"><span class="type">char</span> *buf = peek(fd, <span class="number">0</span>, <span class="number">4096</span>);</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="built_in">printf</span>(“%s\n”, buf); <span class="comment">// print original contents!</span></span><br><span class="line">...</span><br><span class="line">unpeek(buf);</span><br><span class="line">close(fd);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Thread 2: update the peek()’ed region</span></span><br><span class="line"><span class="comment">// of the same file</span></span><br><span class="line"><span class="type">int</span> fd = open(<span class="string">&quot;foo&quot;</span>, O_WRONLY);</span><br><span class="line"><span class="type">char</span> *buf = <span class="built_in">malloc</span>(<span class="number">4096</span>);</span><br><span class="line"><span class="built_in">memset</span>(buf, <span class="number">0xab</span>, <span class="number">4096</span>);</span><br><span class="line">write(fd, buf, <span class="number">4096</span>); <span class="comment">// copy-on-write to</span></span><br><span class="line">... <span class="comment">// a new 4KB</span></span><br><span class="line"><span class="built_in">free</span>(buf)</span><br><span class="line">close(fd); </span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="patch"><a href="#patch" class="headerlink" title="patch()"></a>patch()</h3><p>​    patch() 系统调用通过将缓冲区的内容合并到给定偏移量的文件中来修改文件。本质上，缓冲区成为文件的一部分，而不是被复制到文件中。在 patch() 之后，缓冲区变得不可变。</p>
+<p><img src="./../images/patch%E6%93%8D%E4%BD%9C.png" alt="patch操作"></p>
+<p>​    这个 buffer 需要 access-aligned 。直观地说，就是缓冲区的页边界必须与文件中的页边界对齐。比如：对于在页大小为 S 的文件系统上使用缓冲区 B 和文件偏移 off 关闭的 patch() 操作，如果 B % S == off % S，则 patch() 是访问对齐的。</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>​    为了展示它的潜力，在 PMEM 文件系统 XFS-DAX 和 NOVA 中实现了 SubZero。通过简单的基准测试表明，SubZero 可以比基于复制的 read() 和 write() 性能高出 2 倍和 2.8 倍。在应用层面，peek() 将 Apache Web Server 的 GET 性能提升了 3.6 倍，patch() 将 Kyoto Cabinet 的 SET 性能提升 1.3 倍。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/13/SubZero/" data-id="cl5jjufz20000oc7w6xy62jd9" data-title="SubZero" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="tag">论文阅读</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-mmap整理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/12/mmap%E6%95%B4%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2022-07-12T08:21:55.000Z" itemprop="datePublished">2022-07-12</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/12/mmap%E6%95%B4%E7%90%86/">mmap整理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="mmap是什么"><a href="#mmap是什么" class="headerlink" title="mmap是什么"></a>mmap是什么</h2><p>​    mmap就是memory map，是内存映射。</p>
+<p>​    mmap 是一种内存映射文件的方法，它将一个文件或者其它对象映射到用户进程的虚拟地址空间，实现文件磁盘地址(可以不连续)和进程虚拟地址空间中一段连续虚拟地址的一一对映关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存，而系统会自动回写脏页面到对应的文件磁盘上，即完成了对文件的操作而不必再调用 read、write 等系统调用函数。相反，内核空间对这段区域的修改也直接反映用户空间，从而可以实现不同进程间的文件共享。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/12/mmap%E6%95%B4%E7%90%86/" data-id="cl5jjufz60001oc7w6nv81gil" data-title="mmap整理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/mmap/" rel="tag">mmap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" rel="tag">内存分配</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-第三章-内存管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" class="article-date">
@@ -593,7 +703,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mmap/" rel="tag">mmap</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" rel="tag">内存分配</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="tag">论文阅读</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
     </div>
   </div>
 
@@ -603,7 +713,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/DAX/" style="font-size: 10px;">DAX</a> <a href="/tags/File-System/" style="font-size: 15px;">File System</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 20px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 10px;">PM</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 20px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 10px;">内存管理</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" style="font-size: 10px;">地址映射</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" style="font-size: 10px;">虚拟地址</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 10px;">进程管理</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">阅读笔记</a>
+      <a href="/tags/DAX/" style="font-size: 15px;">DAX</a> <a href="/tags/File-System/" style="font-size: 15px;">File System</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 20px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 15px;">PM</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a> <a href="/tags/mmap/" style="font-size: 10px;">mmap</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 20px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" style="font-size: 10px;">内存分配</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 10px;">内存管理</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" style="font-size: 10px;">地址映射</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" style="font-size: 10px;">虚拟地址</a> <a href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" style="font-size: 10px;">论文阅读</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 10px;">进程管理</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">阅读笔记</a>
     </div>
   </div>
 
@@ -625,6 +735,14 @@
       <ul>
         
           <li>
+            <a href="/2022/07/13/SubZero/">SubZero</a>
+          </li>
+        
+          <li>
+            <a href="/2022/07/12/mmap%E6%95%B4%E7%90%86/">mmap整理</a>
+          </li>
+        
+          <li>
             <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">第三章:内存管理</a>
           </li>
         
@@ -634,14 +752,6 @@
         
           <li>
             <a href="/2022/07/09/%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%86%85%E6%A0%B8%E5%BC%95%E5%AF%BC%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96/">第一章:内核引导和初始化</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/08/ctFS/">ctFS</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/06/SplitFS/">SplitFS</a>
           </li>
         
       </ul>
