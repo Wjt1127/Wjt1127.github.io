@@ -4,22 +4,15 @@
   <meta charset="utf-8">
   
   
-  <title>SplitFS | Wjt1127 Blog</title>
+  <title>Tag: Zero Copy | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Design of SplitFS SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4">
-<meta property="og:type" content="article">
-<meta property="og:title" content="SplitFS">
-<meta property="og:url" content="https://wjt1127.github.io/2022/07/06/SplitFS/index.html">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Wjt1127 Blog">
+<meta property="og:url" content="https://wjt1127.github.io/tags/Zero-Copy/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
-<meta property="og:description" content="Design of SplitFS SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://wjt1127.github.io/2022/07/06/images/Ext4-DAX-Indexing-Path.png">
-<meta property="article:published_time" content="2022-07-06T08:41:27.000Z">
-<meta property="article:modified_time" content="2022-07-08T02:42:07.404Z">
 <meta property="article:author" content="Wjt1127">
-<meta property="article:tag" content="File System">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://wjt1127.github.io/2022/07/06/images/Ext4-DAX-Indexing-Path.png">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
   
@@ -76,66 +69,39 @@
 </header>
 
       <div class="outer">
-        <section id="main"><article id="post-SplitFS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/06/SplitFS/" class="article-date">
-  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">2022-07-06</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
+        <section id="main">
   
-    <h1 class="p-name article-title" itemprop="headline name">
-      SplitFS
+  
+    
+    
+      
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2022" class="archive-year">2022</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      <a href="/2022/07/13/SubZero/" class="archive-article-date">
+  <time class="dt-published" datetime="2022-07-13T02:37:42.000Z" itemprop="datePublished">Jul 13</time>
+</a>
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2022/07/13/SubZero/">SubZero</a>
     </h1>
   
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX的索引路"></p>
-<p>SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4-DAX 文件，K-Split 中的 ext4-DAX 进一步搜索其extent index  以获取实际物理地址。</p>
-<p>SplitFS还提出了一种名为relink的新操作，以提高文件扩展的性能，并在没有双重写入数据的情况下在文件写入时提供崩溃一致性。在其同步模式下，文件增加首先添加到一个暂存文件，然后在调用fsync（）或暂存文件达到其大小限制时重新链接到目标文件；文件覆盖已应用。在严格模式下，每个文件写入，无论是覆盖还是附加数据，都会应用于暂存文件，并在每次写入结束时重新链接。因此，SplitFS  的索引时间包括内核和用户组件中的重新链接、mmap 和索引。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/06/SplitFS/" data-id="cl59lyqpl0004to7wge4z311s" data-title="SplitFS" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li></ul>
-
-    </footer>
+    </header>
   </div>
-  
-    
-<nav id="article-nav">
-  
-    <a href="/2022/07/08/ctFS/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          ctFS
-        
-      </div>
-    </a>
-  
-  
-    <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">PMDK从pmemobj到物理地址的映射流程</div>
-    </a>
-  
-</nav>
-
-  
 </article>
+  
+  
+    </div></section>
+  
 
 
 </section>
