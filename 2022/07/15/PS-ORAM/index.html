@@ -4,14 +4,21 @@
   <meta charset="utf-8">
   
   
-  <title>Tag: DAX | Wjt1127 Blog</title>
+  <title>PS-ORAM | Wjt1127 Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Wjt1127 Blog">
-<meta property="og:url" content="https://wjt1127.github.io/tags/DAX/index.html">
+  <meta name="description" content="BackgroundOblivious RAM​    ORAM(Oblivious Read Access Machine)是指一种计算机，可以实现对于输入X,Y，产生的一系列指令是不可区分的。不经意随机访问机是一种重要的保护访问模式的手段，它通过混淆每一次访问过程，使其与随机访问不可区分，从而保护真实访问中的访问操作、访问位置等信息。 ​    最近这么火，是由于云计算的迅猛发展，越来越多的企">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PS-ORAM">
+<meta property="og:url" content="https://wjt1127.github.io/2022/07/15/PS-ORAM/index.html">
 <meta property="og:site_name" content="Wjt1127 Blog">
+<meta property="og:description" content="BackgroundOblivious RAM​    ORAM(Oblivious Read Access Machine)是指一种计算机，可以实现对于输入X,Y，产生的一系列指令是不可区分的。不经意随机访问机是一种重要的保护访问模式的手段，它通过混淆每一次访问过程，使其与随机访问不可区分，从而保护真实访问中的访问操作、访问位置等信息。 ​    最近这么火，是由于云计算的迅猛发展，越来越多的企">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-15T11:15:27.000Z">
+<meta property="article:modified_time" content="2022-07-15T11:35:46.189Z">
 <meta property="article:author" content="Wjt1127">
+<meta property="article:tag" content="ISAC">
+<meta property="article:tag" content="Security">
+<meta property="article:tag" content="2022">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Wjt1127 Blog" type="application/atom+xml">
@@ -69,58 +76,67 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2022" class="archive-year">2022</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/13/SubZero/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-13T02:37:42.000Z" itemprop="datePublished">Jul 13</time>
+        <section id="main"><article id="post-PS-ORAM" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/15/PS-ORAM/" class="article-date">
+  <time class="dt-published" datetime="2022-07-15T11:15:27.000Z" itemprop="datePublished">2022-07-15</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/13/SubZero/">SubZero</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      PS-ORAM
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2022/07/08/ctFS/" class="archive-article-date">
-  <time class="dt-published" datetime="2022-07-08T02:18:07.000Z" itemprop="datePublished">Jul 8</time>
-</a>
+    <div class="e-content article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/07/08/ctFS/">ctFS</a>
-    </h1>
-  
+        <h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><h3 id="Oblivious-RAM"><a href="#Oblivious-RAM" class="headerlink" title="Oblivious RAM"></a>Oblivious RAM</h3><p>​    ORAM(Oblivious Read Access Machine)是指一种计算机，可以实现对于输入X,Y，产生的一系列指令是不可区分的。不经意随机访问机是一种重要的保护访问模式的手段，它通过混淆每一次访问过程，使其与随机访问不可区分，从而保护真实访问中的访问操作、访问位置等信息。</p>
+<p>​    最近这么火，是由于云计算的迅猛发展，越来越多的企业和个人把数据外包到位于公有云上，然后数据安全和隐私保护就显得越来越重要。即云环境下的数据的机密性保护成为了重要的研究课题。常见的保护方式是在数据上传到云服务器上前进行加密，但是即使数据加密，攻击者也可以从数据访问模式（Access Patterns）推测出敏感信息。这里的访问模式是指程序对存储器的一系列访问所泄露的信息，包括命令（读或写）、地址和数据。已有工作证明攻击者可以从访问模式推测出敏感信息。</p>
+<p>​    ORAM 近来就是来解决这个问题，隐藏数据的访问模式。比如一种简单的方案，就是每次把云上存储的数据都读到本地，然后找到自己需要读取或者更新的数据，然后再全部写回到云服务器上。这样云服务器就不知道你读了或者更新了什么数据。这就是一种最简单的 ORAM 方案，只是开销太大了，ORAM 研究的一大方向就是针对计算复杂度和带宽开销进行优化。</p>
+<p>参考链接：<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/45314262/answer/275838233">https://www.zhihu.com/question/45314262/answer/275838233</a></p>
 
-    </header>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/15/PS-ORAM/" data-id="cl5qviatw0000sk7w5m6gbv1i" data-title="PS-ORAM" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/2022/" rel="tag">2022</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ISAC/" rel="tag">ISAC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Security/" rel="tag">Security</a></li></ul>
+
+    </footer>
   </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2022/07/16/%E5%89%91%E6%8C%87-Offer-II-041-%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          剑指 Offer II 041. 滑动窗口的平均值
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2022/07/13/SubZero/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">SubZero</div>
+    </a>
+  
+</nav>
+
+  
 </article>
-  
-  
-    </div></section>
-  
 
 
 </section>
