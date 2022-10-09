@@ -71,6 +71,105 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-copy-cow-page-dax" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/09/30/copy-cow-page-dax/" class="article-date">
+  <time class="dt-published" datetime="2022-09-30T02:51:14.000Z" itemprop="datePublished">2022-09-30</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="fs-dax-c-–-gt-copy-cow-page-dax"><a href="#fs-dax-c-–-gt-copy-cow-page-dax" class="headerlink" title="fs\dax.c –&gt; copy_cow_page_dax()"></a>fs\dax.c –&gt; copy_cow_page_dax()</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">copy_cow_page_dax</span><span class="params">(<span class="keyword">struct</span> vm_fault *vmf, <span class="type">const</span> <span class="keyword">struct</span> iomap_iter *iter)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">pgoff_t</span> pgoff = dax_iomap_pgoff(&amp;iter-&gt;iomap, iter-&gt;pos);<span class="comment">/* dax_iomap_pgoff -&gt; PHYS_PFN ：获得物理页框号*/</span></span><br><span class="line">	<span class="type">void</span> *vto, *kaddr;</span><br><span class="line">	<span class="type">long</span> rc;</span><br><span class="line">	<span class="type">int</span> id;</span><br><span class="line"></span><br><span class="line">	id = dax_read_lock();</span><br><span class="line">	rc = dax_direct_access(iter-&gt;iomap.dax_dev, pgoff, <span class="number">1</span>, DAX_ACCESS,</span><br><span class="line">				&amp;kaddr, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		dax_read_unlock(id);</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	&#125;</span><br><span class="line">	vto = kmap_atomic(vmf-&gt;cow_page);</span><br><span class="line">	copy_user_page(vto, kaddr, vmf-&gt;address, vmf-&gt;cow_page);</span><br><span class="line">	kunmap_atomic(vto);</span><br><span class="line">	dax_read_unlock(id);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="include-linux-iomap-h-–-gt-struct-iomap-iter"><a href="#include-linux-iomap-h-–-gt-struct-iomap-iter" class="headerlink" title="include/linux/iomap.h –&gt; struct iomap_iter"></a>include/linux/iomap.h –&gt; struct iomap_iter</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * struct iomap_iter - Iterate through a range of a file(遍历文件的某一范围)</span></span><br><span class="line"><span class="comment"> * @inode: Set at the start of the iteration and should not change.</span></span><br><span class="line"><span class="comment"> * @pos: The current file position we are operating on.  It is updated by</span></span><br><span class="line"><span class="comment"> *	calls to iomap_iter().  Treat as read-only in the body.</span></span><br><span class="line"><span class="comment"> * @len: The remaining length of the file segment we&#x27;re operating on.</span></span><br><span class="line"><span class="comment"> *	It is updated at the same time as @pos.</span></span><br><span class="line"><span class="comment"> * @processed: The number of bytes processed by the body in the most recent</span></span><br><span class="line"><span class="comment"> *	iteration, or a negative errno. 0 causes the iteration to stop.</span></span><br><span class="line"><span class="comment"> * @flags: Zero or more of the iomap_begin flags above.</span></span><br><span class="line"><span class="comment"> * @iomap: Map describing the I/O iteration</span></span><br><span class="line"><span class="comment"> * @srcmap: Source map for COW operations</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">iomap_iter</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inode</span> *<span class="title">inode</span>;</span></span><br><span class="line">	<span class="type">loff_t</span> pos;</span><br><span class="line">	u64 len;</span><br><span class="line">	s64 processed;</span><br><span class="line">	<span class="type">unsigned</span> flags;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iomap</span> <span class="title">iomap</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iomap</span> <span class="title">srcmap</span>;</span></span><br><span class="line">	<span class="type">void</span> *private;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="drivers-dax-super-c-–-gt-dax-direct-access"><a href="#drivers-dax-super-c-–-gt-dax-direct-access" class="headerlink" title="/drivers/dax/super.c –&gt; dax_direct_access()"></a>/drivers/dax/super.c –&gt; dax_direct_access()</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * dax_direct_access() - translate a device pgoff to an absolute pfn</span></span><br><span class="line"><span class="comment"> * @dax_dev: a dax_device instance representing the logical memory range</span></span><br><span class="line"><span class="comment"> * @pgoff: offset in pages from the start of the device to translate</span></span><br><span class="line"><span class="comment"> 			从设备开始翻译，以页为单位的偏移量</span></span><br><span class="line"><span class="comment"> * @nr_pages: number of consecutive pages caller can handle relative to @pfn</span></span><br><span class="line"><span class="comment"> * @mode: indicator on normal access or recovery write</span></span><br><span class="line"><span class="comment"> * @kaddr: output parameter that returns a virtual address mapping of pfn</span></span><br><span class="line"><span class="comment"> * @pfn: output parameter that returns an absolute pfn translation of @pgoff</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: negative errno if an error occurs, otherwise the number of</span></span><br><span class="line"><span class="comment"> * pages accessible at the device relative @pgoff.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">dax_direct_access</span><span class="params">(<span class="keyword">struct</span> dax_device *dax_dev, <span class="type">pgoff_t</span> pgoff, <span class="type">long</span> nr_pages,</span></span><br><span class="line"><span class="params">		<span class="keyword">enum</span> dax_access_mode mode, <span class="type">void</span> **kaddr, <span class="type">pfn_t</span> *pfn)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">long</span> avail;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!dax_dev)</span><br><span class="line">		<span class="keyword">return</span> -EOPNOTSUPP;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!dax_alive(dax_dev))</span><br><span class="line">		<span class="keyword">return</span> -ENXIO;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nr_pages &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">	avail = dax_dev-&gt;ops-&gt;direct_access(dax_dev, pgoff, nr_pages,</span><br><span class="line">			mode, kaddr, pfn);</span><br><span class="line">	<span class="keyword">if</span> (!avail)</span><br><span class="line">		<span class="keyword">return</span> -ERANGE;</span><br><span class="line">	<span class="keyword">return</span> min(avail, nr_pages);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL_GPL(dax_direct_access);</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="include-linux-dax-h-–-gt-dax-operrations-gt-direct-access"><a href="#include-linux-dax-h-–-gt-dax-operrations-gt-direct-access" class="headerlink" title="/include/linux/dax.h  –&gt;  dax_operrations-&gt;direct_access()"></a>/include/linux/dax.h  –&gt;  dax_operrations-&gt;direct_access()</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">dax_operations</span> &#123;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * direct_access: translate a device-relative</span></span><br><span class="line"><span class="comment">	 * logical-page-offset into an absolute physical pfn. Return the</span></span><br><span class="line"><span class="comment">	 * number of pages available for DAX at that pfn.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">long</span> (*direct_access)(<span class="keyword">struct</span> dax_device *, <span class="type">pgoff_t</span>, <span class="type">long</span>,</span><br><span class="line">			<span class="keyword">enum</span> dax_access_mode, <span class="type">void</span> **, <span class="type">pfn_t</span> *);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Validate whether this device is usable as an fsdax backing</span></span><br><span class="line"><span class="comment">	 * device.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">bool</span> (*dax_supported)(<span class="keyword">struct</span> dax_device *, <span class="keyword">struct</span> block_device *, <span class="type">int</span>,</span><br><span class="line">			<span class="type">sector_t</span>, <span class="type">sector_t</span>);</span><br><span class="line">	<span class="comment">/* zero_page_range: required operation. Zero page range   */</span></span><br><span class="line">	<span class="type">int</span> (*zero_page_range)(<span class="keyword">struct</span> dax_device *, <span class="type">pgoff_t</span>, <span class="type">size_t</span>);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * recovery_write: recover a poisoned range by DAX device driver</span></span><br><span class="line"><span class="comment">	 * capable of clearing poison.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">size_t</span> (*recovery_write)(<span class="keyword">struct</span> dax_device *dax_dev, <span class="type">pgoff_t</span> pgoff,</span><br><span class="line">			<span class="type">void</span> *addr, <span class="type">size_t</span> bytes, <span class="keyword">struct</span> iov_iter *iter);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="drivers-nvdimm-pmem-c-中"><a href="#drivers-nvdimm-pmem-c-中" class="headerlink" title="/drivers/nvdimm/pmem.c 中 :"></a>/drivers/nvdimm/pmem.c 中 :</h1><ul>
+<li>.direct_access = pmem_dax_direct_access</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">dax_operations</span> <span class="title">pmem_dax_ops</span> =</span> &#123;</span><br><span class="line">	.direct_access = pmem_dax_direct_access,</span><br><span class="line">	.zero_page_range = pmem_dax_zero_page_range,</span><br><span class="line">	.recovery_write = pmem_recovery_write,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="drivers-nvdimm-pmem-c"><a href="#drivers-nvdimm-pmem-c" class="headerlink" title="/drivers/nvdimm/pmem.c"></a>/drivers/nvdimm/pmem.c</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">long</span> <span class="title function_">pmem_dax_direct_access</span><span class="params">(<span class="keyword">struct</span> dax_device *dax_dev,</span></span><br><span class="line"><span class="params">		<span class="type">pgoff_t</span> pgoff, <span class="type">long</span> nr_pages, <span class="keyword">enum</span> dax_access_mode mode,</span></span><br><span class="line"><span class="params">		<span class="type">void</span> **kaddr, <span class="type">pfn_t</span> *pfn)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pmem_device</span> *<span class="title">pmem</span> =</span> dax_get_private(dax_dev);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> __pmem_direct_access(pmem, pgoff, nr_pages, mode, kaddr, pfn);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="drivers-nvdimm-pmem-c-1"><a href="#drivers-nvdimm-pmem-c-1" class="headerlink" title="/drivers/nvdimm/pmem.c"></a>/drivers/nvdimm/pmem.c</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* see &quot;strong&quot; declaration in tools/testing/nvdimm/pmem-dax.c */</span></span><br><span class="line">__weak <span class="type">long</span> __pmem_direct_access(<span class="keyword">struct</span> pmem_device *pmem, <span class="type">pgoff_t</span> pgoff,</span><br><span class="line">		<span class="type">long</span> nr_pages, <span class="keyword">enum</span> dax_access_mode mode, <span class="type">void</span> **kaddr,</span><br><span class="line">		<span class="type">pfn_t</span> *pfn)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* pgoff 是在设备起始地址开始的页偏移量 */</span> </span><br><span class="line">	<span class="type">resource_size_t</span> offset = PFN_PHYS(pgoff) + pmem-&gt;data_offset;</span><br><span class="line">	<span class="type">sector_t</span> sector = PFN_PHYS(pgoff) &gt;&gt; SECTOR_SHIFT;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> num = PFN_PHYS(nr_pages) &gt;&gt; SECTOR_SHIFT;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">badblocks</span> *<span class="title">bb</span> =</span> &amp;pmem-&gt;bb;</span><br><span class="line">	<span class="type">sector_t</span> first_bad;</span><br><span class="line">	<span class="type">int</span> num_bad;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (kaddr)</span><br><span class="line">		*kaddr = pmem-&gt;virt_addr + offset; <span class="comment">//填充 pmem 对应的虚拟地址</span></span><br><span class="line">	<span class="keyword">if</span> (pfn)</span><br><span class="line">		*pfn = <span class="type">phys_to_pfn_t</span>(pmem-&gt;phys_addr + offset, pmem-&gt;pfn_flags);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (bb-&gt;count &amp;&amp;</span><br><span class="line">	    badblocks_check(bb, sector, num, &amp;first_bad, &amp;num_bad)) &#123;</span><br><span class="line">		<span class="type">long</span> actual_nr;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (mode != DAX_RECOVERY_WRITE)</span><br><span class="line">			<span class="keyword">return</span> -EIO;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Set the recovery stride is set to kernel page size because</span></span><br><span class="line"><span class="comment">		 * the underlying driver and firmware clear poison functions</span></span><br><span class="line"><span class="comment">		 * don&#x27;t appear to handle large chunk(such as 2MiB) reliably.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		actual_nr = PHYS_PFN(</span><br><span class="line">			PAGE_ALIGN((first_bad - sector) &lt;&lt; SECTOR_SHIFT));</span><br><span class="line">		dev_dbg(pmem-&gt;bb.dev, <span class="string">&quot;start sector(%llu), nr_pages(%ld), first_bad(%llu), actual_nr(%ld)\n&quot;</span>,</span><br><span class="line">				sector, nr_pages, first_bad, actual_nr);</span><br><span class="line">		<span class="keyword">if</span> (actual_nr)</span><br><span class="line">			<span class="keyword">return</span> actual_nr;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If badblocks are present but not in the range, limit known good range</span></span><br><span class="line"><span class="comment">	 * to the requested range.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (bb-&gt;count)</span><br><span class="line">		<span class="keyword">return</span> nr_pages;</span><br><span class="line">	<span class="keyword">return</span> PHYS_PFN(pmem-&gt;size - pmem-&gt;pfn_pad - offset);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="include-linux-highmem-h-–-gt-kmap-atomic"><a href="#include-linux-highmem-h-–-gt-kmap-atomic" class="headerlink" title="/include/linux/highmem.h –&gt; kmap_atomic()"></a>/include/linux/highmem.h –&gt; kmap_atomic()</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * kmap_atomic - Atomically map a page for temporary usage - Deprecated!</span></span><br><span class="line"><span class="comment"> * @page:	Pointer to the page to be mapped</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Returns: The virtual address of the mapping</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * In fact a wrapper around kmap_local_page() which also disables pagefaults</span></span><br><span class="line"><span class="comment"> * and, depending on PREEMPT_RT configuration, also CPU migration and</span></span><br><span class="line"><span class="comment"> * preemption. Therefore users should not count on the latter two side effects.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Mappings should always be released by kunmap_atomic().</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Do not use in new code. Use kmap_local_page() instead.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * It is used in atomic context when code wants to access the contents of a</span></span><br><span class="line"><span class="comment"> * page that might be allocated from high memory (see __GFP_HIGHMEM), for</span></span><br><span class="line"><span class="comment"> * example a page in the pagecache.  The API has two functions, and they</span></span><br><span class="line"><span class="comment"> * can be used in a manner similar to the following::</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *   // Find the page of interest.</span></span><br><span class="line"><span class="comment"> *   struct page *page = find_get_page(mapping, offset);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *   // Gain access to the contents of that page.</span></span><br><span class="line"><span class="comment"> *   void *vaddr = kmap_atomic(page);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *   // Do something to the contents of that page.</span></span><br><span class="line"><span class="comment"> *   memset(vaddr, 0, PAGE_SIZE);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *   // Unmap that page.</span></span><br><span class="line"><span class="comment"> *   kunmap_atomic(vaddr);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note that the kunmap_atomic() call takes the result of the kmap_atomic()</span></span><br><span class="line"><span class="comment"> * call, not the argument.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If you need to map two pages because you want to copy from one page to</span></span><br><span class="line"><span class="comment"> * another you need to keep the kmap_atomic calls strictly nested, like:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * vaddr1 = kmap_atomic(page1);</span></span><br><span class="line"><span class="comment"> * vaddr2 = kmap_atomic(page2);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * memcpy(vaddr1, vaddr2, PAGE_SIZE);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * kunmap_atomic(vaddr2);</span></span><br><span class="line"><span class="comment"> * kunmap_atomic(vaddr1);</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> *<span class="title function_">kmap_atomic</span><span class="params">(<span class="keyword">struct</span> page *page)</span>;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/09/30/copy-cow-page-dax/" data-id="cl919s0ql0001qk7wfusa23eh" data-title="" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/COW/" rel="tag">COW</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/XFS/" rel="tag">XFS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/reflink/" rel="tag">reflink</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-CreateObj-in-PMDK" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2022/07/19/CreateObj-in-PMDK/" class="article-date">
+  <time class="dt-published" datetime="2022-07-19T14:22:49.000Z" itemprop="datePublished">2022-07-19</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/07/19/CreateObj-in-PMDK/">CreateObj in PMDK</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>​    为了完成CoW_PM项目，首先得实现一个createobj()的函数，它由fd和offset生成一个obj，并返回该obj的标识。PMDK的pmemobj_create()函数的功能类似，故学习一下它是如何实现的。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wjt1127.github.io/2022/07/19/CreateObj-in-PMDK/" data-id="cl919s0qf0000qk7whk1vbaje" data-title="CreateObj in PMDK" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-剑指-Offer-II-041-滑动窗口的平均值" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/07/16/%E5%89%91%E6%8C%87-Offer-II-041-%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC/" class="article-date">
@@ -571,9 +670,10 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><img src="./../images/Access-Time-for-PM.png" alt="PM的访问"></p>
-<p>​    由于PM的低延迟性，PM 比磁盘存储快得多，对 PM 的访问可以像对易失性 RAM 的访问一样，由内存管理单元 (MMU) 进行管理。PM的特性将访问瓶颈从 I/O 时延转移到诸如块地址查找之类的操作上。比如，在写入工作负载中，ext4-DAX 中高达 45% 的开销是构建和搜索范围树以将文件偏移量转换为在持久内存上的地址。</p>
+<p>​    PM 的出现降低了非易失性内存和DRAM的性能差距，并且带来了可字节访问的特性。当前一些针对 PM 优化的文件系统，要么使用DAX技术来绕过 Page Cache ；要么通过将不同的文件系统数据结构映射到用户空间来绕过内核，以减少由用户态切换到内核态的开销。</p>
 <p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX Index path"></p>
-<p>​    当前一些针对PM 优化的文件系统，要么使用DAX技术来绕过 Page Cache ；要么通过将不同的文件系统数据结构映射到用户空间来绕过内核，以减少切换到内核的开销。所有的这些系统都使用传统的基于树的索引结构将文件偏移量转换为设备地址。<strong>这种索引结构是在内存和持久存储(磁盘)的速度相差几个数量级时提出的，然而，PM 的出现让这种速度差异已经显着缩小到几乎可以忽略不计的程度。并且PM的低延迟反过来又将瓶颈从 I/O 转移到了文件索引开销上。</strong></p>
+<p>​    然而上述文件系统的索引结构还是传统的 tree-based。这种树型的索引结构是在 unix 系统时期提出的，当时内存和持久存储(磁盘)的访问速度相差几个数量级，主要的开销主要是对持久外存的访问。然而，PM 的出现让这种速度差异已经显着缩小到几乎可以忽略不计的程度。并且PM的低延迟反过来又将瓶颈从 I/O 转移到了文件索引开销上。据作者的实验显示，即便是ext4-dax模式，某些情况内存索引的开销占总开销的 45%。</p>
+<p><img src="./../public/images/image-20220721212356546.png" alt="image-20220721212356546"></p>
 <h2 id="方案与设计"><a href="#方案与设计" class="headerlink" title="方案与设计"></a>方案与设计</h2><p>​    <strong>提出ctFS文件系统使用连续文件分配来代替文件索引。</strong></p>
 <p>​    ctFS使用持久页表 (PPT，Persistent Page Table) 管理文件的虚拟到物理映射。 PPT 与 DRAM 中的常规易失页表具有相似的结构，不同之处在于 PPT 永久存储在 PM 上。在 ctFS 内存区域内的地址出现页面错误时，操作系统会查找 PPT 并在基于 DRAM 的页表中创建相同的映射。因此，子序列访问由 MMU 提供查询DRAM中页表的服务，从而避免了索引成本。</p>
 <hr>
@@ -581,7 +681,7 @@
 <p>​    <img src="./../images/Architecture-of-ctFS.jpg" alt="ctFS的架构"></p>
 <p>​    ctFS 的架构如图所示，由两个组件组成：(1) 提供文件系统抽象的用户空间文件系统库 ctU，以及 (2) 提供虚拟内存抽象的内核子系统 ctK。 ctU 实现文件系统结构并将其映射到虚拟内存空间。 ctK 使用存储在 PM 中的持久页表 (PPT) 将虚拟地址映射到 PM 的物理地址。ctU 地址范围内的虚拟地址上的任何页面错误都由 ctK 处理。如果 PPT 中不包含故障地址的映射，ctK 将分配一个 PM 页，在 PPT 中建立映射，然后将映射从 PPT 复制到内核的 DRAM 页表，从而实现虚拟到 PM 地址的转换由 MMU 执行。当 PPT 中的任何映射过时 时，ctK 将从 DRAM 页表中删除相应的映射，并删除 TLB 中的映射。</p>
 <p>​    <strong>ctU</strong>：</p>
-<p>​    ctFS 的用户空间库 ctU 将文件系统的虚拟内存空间组织成分层分区，以促进连续分配。ctFS采用类似于Linux 的伙伴分配算法来管理虚拟地址空间，并将它们分层，每个level之间的大小差距是8倍，因为要和page table的多级页表先匹配，和地址的对应的关系对应如下：</p>
+<p>​    ctFS 的用户空间库 ctU 将文件系统的虚拟内存空间组织成分层分区，以促进连续分配。ctFS采用类似于Linux 的伙伴分配算法来管理虚拟地址空间，并将它们分层，每个level之间的大小差距是8倍，和地址的对应的关系对应如下：</p>
 <p><img src="./../images/size-of-partition.jpg" alt="size of partition"></p>
 <p>​    虚拟内存区域被划分为两个 L9 分区。第一个 L9 分区是用于存储文件系统元数据的特殊分区：超级块、inode 的位图以及 inode 本身。每个 inode 存储文件的元数据（例如，所有者、组、保护、大小等）和一个字段，用于标识包含文件数据的分区的虚拟内存地址。 inode 位图用于跟踪是否分配了 inode。第二个 L9 分区用于数据存储。</p>
 <p><img src="./../images/Layout-of-ctFS.jpg" alt="Layout of ctFS"></p>
@@ -591,7 +691,7 @@
 <p>​    <strong>ctK 负责管理PPT，对于虚拟地址和物理地址，ctFS都采用的相对地址，为每个进程映射到不同的虚拟地址</strong></p>
 <hr>
 <p>​    <strong>Pswap系统调用：</strong></p>
-<p>​    最初，一个文件被分配在一个分区中，该分区的大小刚好足以容纳该文件。当文件超出其分区时，它会被移动到虚拟内存中更大的分区，而无需复制任何物理持久内存。 ctFS 通过使用pswap 将文件的物理页面重新映射到新分区来做到这一点，这是一种新的操作系统系统调用，可以原子地交换虚拟到物理的映射。原子交换还可以在多块写入时实现高效的崩溃一致性，而无需重复写入数据。 ctFS 中的原子写入只是将数据写入新空间，然后将其与旧数据进行 pswaps。</p>
+<p>​    最初，一个文件被分配在一个分区中，该分区的大小刚好足以容纳该文件。当文件超出其分区时，它会被移动到虚拟内存中更大的分区，而无需复制任何物理持久内存。 ctFS 通过使用 pswap 将文件的物理页面重新映射到新分区来做到这一点，这是一种新的操作系统系统调用，可以原子地交换虚拟到物理的映射。原子交换还可以在多块写入时实现高效的崩溃一致性，而无需重复写入数据。 ctFS 中的原子写入只是将数据写入新空间，然后将其与旧数据进行 pswaps。</p>
 <p>​    <img src="./../images/Pswap.jpg" alt="Pswap"></p>
 <p>​        上图展示了一个例子，其中 pswap 需要交换两个页面序列 A 和 B， 两个序列都包含 262658 (512 × 512 + 512 + 2) 个页面。 交换两个序列的数据时，使用pswap 只需要交换 4 对页表条目或目录，因为所有 262,658 个页面都被单个 PUD 条目覆盖（覆盖 512×512 个页面），单个 PMD 条目（涵盖 512 页）和两个 PTE 条目（涵盖 2 页）。</p>
 
@@ -603,116 +703,6 @@
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PM/" rel="tag">PM</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-SplitFS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/06/SplitFS/" class="article-date">
-  <time class="dt-published" datetime="2022-07-06T08:41:27.000Z" itemprop="datePublished">2022-07-06</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/06/SplitFS/">SplitFS</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="Design-of-SplitFS"><a href="#Design-of-SplitFS" class="headerlink" title="Design of SplitFS"></a>Design of SplitFS</h2><p><img src="./../images/Ext4-DAX-Indexing-Path.png" alt="Ext4-DAX的索引路"></p>
-<p>SplitFS 将文件系统在逻辑上拆分为用户空间部分（U-Split）和内核空间部分（K-Split），其中 K-Split 使用 ext4-DAX。通过  U-Split 将一个文件拆分为多个 2MB 区域，其中每个区域映射到一个 ext4-DAX 文件。 USplit 和 K-Split  都参与索引：U-Split 将一个逻辑文件偏移映射到对应的 ext4-DAX 文件，K-Split 中的 ext4-DAX 进一步搜索其extent index  以获取实际物理地址。</p>
-<p>SplitFS还提出了一种名为relink的新操作，以提高文件扩展的性能，并在没有双重写入数据的情况下在文件写入时提供崩溃一致性。在其同步模式下，文件增加首先添加到一个暂存文件，然后在调用fsync（）或暂存文件达到其大小限制时重新链接到目标文件；文件覆盖已应用。在严格模式下，每个文件写入，无论是覆盖还是附加数据，都会应用于暂存文件，并在每次写入结束时重新链接。因此，SplitFS  的索引时间包括内核和用户组件中的重新链接、mmap 和索引。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/06/SplitFS/" data-id="cl59lyqpl0004to7wge4z311s" data-title="SplitFS" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-PMDK从pmemobj到物理地址的映射" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" class="article-date">
-  <time class="dt-published" datetime="2022-07-05T16:00:00.000Z" itemprop="datePublished">2022-07-06</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/">PMDK从pmemobj到物理地址的映射流程</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="三重映射"><a href="#三重映射" class="headerlink" title="三重映射"></a>三重映射</h1><ul>
-<li>从pmemobj的ID到虚拟地址的映射</li>
-<li>从虚拟地址到文件内偏移的映射</li>
-<li>从文件到物理地址的映射</li>
-</ul>
-<h2 id="pmemobj到虚拟地址的映射"><a href="#pmemobj到虚拟地址的映射" class="headerlink" title="pmemobj到虚拟地址的映射"></a>pmemobj到虚拟地址的映射</h2><ul>
-<li><p>查看pmemobj的创建函数 pmemobj_createW(src\libpmemobj\obj.c)</p>
-<ol>
-<li><p>pmemobj_createW —&gt; pmemobj_createU(src\libpmemobj\obj.c)</p>
-</li>
-<li><p>pmemobj_createU  —&gt; util_pool_create(src\common\set.c)</p>
-</li>
-<li><p>util_pool_create  —&gt; util_pool_create_uuids(src\common\set.c)</p>
-</li>
-<li><p>util_pool_create_uuids  —&gt; util_poolset_create_set(src\common\set.c)</p>
-</li>
-<li><p><strong>util_poolset_create_set  —&gt; util_poolset_single(src\common\set.c)</strong> </p>
-</li>
-<li><p>设置DAX模式就主要到util_poolset_single进行处理</p>
-<p>​	其中<strong>rep-&gt;part[0].fd</strong>成员使用 <strong>util_poolset_file</strong>填充</p>
-<p>​	<strong>rep-&gt;part[0].alignment</strong>使用<strong>device_dax_alignment</strong>填充</p>
-</li>
-</ol>
-</li>
-<li><p>查看pmemobj_open函数(src\libpmemobj\obj.c)</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wjt1127.github.io/2022/07/06/PMDK%E4%BB%8Epmemobj%E5%88%B0%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84/" data-id="cl59lyqpb0000to7w6ddu5jh1" data-title="PMDK从pmemobj到物理地址的映射流程" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li></ul>
 
     </footer>
   </div>
@@ -740,7 +730,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/2022/" rel="tag">2022</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ISAC/" rel="tag">ISAC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Security/" rel="tag">Security</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zero-Copy/" rel="tag">Zero Copy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/easy/" rel="tag">easy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/leetcode/" rel="tag">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mmap/" rel="tag">mmap</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" rel="tag">内存分配</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/" rel="tag">滑动窗口</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="tag">论文阅读</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/2022/" rel="tag">2022</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/COW/" rel="tag">COW</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DAX/" rel="tag">DAX</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/File-System/" rel="tag">File System</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ISAC/" rel="tag">ISAC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E5%86%85%E6%A0%B8/" rel="tag">Linux内核</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PM/" rel="tag">PM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMDK/" rel="tag">PMDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Security/" rel="tag">Security</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/XFS/" rel="tag">XFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zero-Copy/" rel="tag">Zero Copy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/easy/" rel="tag">easy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/leetcode/" rel="tag">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/" rel="tag">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mmap/" rel="tag">mmap</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/reflink/" rel="tag">reflink</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" rel="tag">《Linux内核深度解析(余华兵)》</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" rel="tag">内存分配</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">内存管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" rel="tag">初始化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" rel="tag">地址映射</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/" rel="tag">滑动窗口</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="tag">虚拟地址</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="tag">论文阅读</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">进程管理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" rel="tag">阅读笔记</a></li></ul>
     </div>
   </div>
 
@@ -750,7 +740,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/2022/" style="font-size: 10px;">2022</a> <a href="/tags/DAX/" style="font-size: 15px;">DAX</a> <a href="/tags/File-System/" style="font-size: 15px;">File System</a> <a href="/tags/ISAC/" style="font-size: 10px;">ISAC</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 20px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 15px;">PM</a> <a href="/tags/PMDK/" style="font-size: 10px;">PMDK</a> <a href="/tags/Security/" style="font-size: 10px;">Security</a> <a href="/tags/Zero-Copy/" style="font-size: 10px;">Zero Copy</a> <a href="/tags/easy/" style="font-size: 10px;">easy</a> <a href="/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/tags/mmap/" style="font-size: 10px;">mmap</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 20px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" style="font-size: 10px;">内存分配</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 10px;">内存管理</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" style="font-size: 10px;">地址映射</a> <a href="/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/" style="font-size: 10px;">滑动窗口</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" style="font-size: 10px;">虚拟地址</a> <a href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" style="font-size: 10px;">论文阅读</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 10px;">进程管理</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">阅读笔记</a>
+      <a href="/tags/2022/" style="font-size: 10px;">2022</a> <a href="/tags/COW/" style="font-size: 10px;">COW</a> <a href="/tags/DAX/" style="font-size: 15px;">DAX</a> <a href="/tags/File-System/" style="font-size: 15px;">File System</a> <a href="/tags/ISAC/" style="font-size: 10px;">ISAC</a> <a href="/tags/Linux%E5%86%85%E6%A0%B8/" style="font-size: 20px;">Linux内核</a> <a href="/tags/PM/" style="font-size: 15px;">PM</a> <a href="/tags/PMDK/" style="font-size: 15px;">PMDK</a> <a href="/tags/Security/" style="font-size: 10px;">Security</a> <a href="/tags/XFS/" style="font-size: 10px;">XFS</a> <a href="/tags/Zero-Copy/" style="font-size: 10px;">Zero Copy</a> <a href="/tags/easy/" style="font-size: 10px;">easy</a> <a href="/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/tags/linux/" style="font-size: 10px;">linux</a> <a href="/tags/mmap/" style="font-size: 10px;">mmap</a> <a href="/tags/reflink/" style="font-size: 10px;">reflink</a> <a href="/tags/%E3%80%8ALinux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-%E4%BD%99%E5%8D%8E%E5%85%B5-%E3%80%8B/" style="font-size: 20px;">《Linux内核深度解析(余华兵)》</a> <a href="/tags/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/" style="font-size: 10px;">内存分配</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 10px;">内存管理</a> <a href="/tags/%E5%88%9D%E5%A7%8B%E5%8C%96/" style="font-size: 10px;">初始化</a> <a href="/tags/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84/" style="font-size: 10px;">地址映射</a> <a href="/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/" style="font-size: 10px;">滑动窗口</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" style="font-size: 10px;">虚拟地址</a> <a href="/tags/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" style="font-size: 10px;">论文阅读</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 10px;">进程管理</a> <a href="/tags/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">阅读笔记</a>
     </div>
   </div>
 
@@ -759,7 +749,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/07/">July 2022</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/09/">September 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/07/">July 2022</a></li></ul>
     </div>
   </div>
 
@@ -772,6 +762,14 @@
       <ul>
         
           <li>
+            <a href="/2022/09/30/copy-cow-page-dax/">(no title)</a>
+          </li>
+        
+          <li>
+            <a href="/2022/07/19/CreateObj-in-PMDK/">CreateObj in PMDK</a>
+          </li>
+        
+          <li>
             <a href="/2022/07/16/%E5%89%91%E6%8C%87-Offer-II-041-%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC/">剑指 Offer II 041. 滑动窗口的平均值</a>
           </li>
         
@@ -781,14 +779,6 @@
         
           <li>
             <a href="/2022/07/13/SubZero/">SubZero</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/12/mmap%E6%95%B4%E7%90%86/">mmap整理</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/11/%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">第三章:内存管理</a>
           </li>
         
       </ul>
